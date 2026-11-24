@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Blockcraft</title>
+  <style>
+    :root {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+      color: #fff;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block
+    }
+
+    #hud {
+      position: fixed;
+      top: calc(8px + env(safe-area-inset-top, 0px));
+      left: 10px;
+      font-size: 14px;
+      text-shadow: 0 1px 2px #000;
+      pointer-events: none
+    }
+
+    #cross {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      margin: -9px;
+      pointer-events: none
+    }
+
+    #cross:before,
+    #cross:after {
+      content: "";
+      position: absolute;
+      background: #fff;
+      mix-blend-mode: difference
+    }
+
+    #cross:before {
+      left: 8px;
+      top: 0;
+      width: 2px;
+      height: 18px
+    }
+
+    #cross:after {
+      top: 8px;
+      left: 0;
+      height: 2px;
+      width: 18px
+    }
+
+    #bar {
+      position: fixed;
+      left: 50%;
+      top: 54%;
+      width: 60px;
+      height: 5px;
+      margin-left: -30px;
+      background: #0006;
+      display: none
+    }
+
+    #bar i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: #fff
+    }
+
+    #hot {
+      position: fixed;
+      bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(440px, 98vw);
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 3px
+    }
+
+    #off {
+      position: fixed;
+      bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+      left: calc(50% - min(220px, 49vw));
+      width: 44px;
+      z-index: 1
+    }
+
+    #bars {
+      position: fixed;
+      bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(440px, 98vw);
+      display: flex;
+      gap: 10px;
+      pointer-events: none
+    }
+
+    .bar {
+      flex: 1;
+      height: 16px;
+      background: #0009;
+      border: 2px solid #000;
+      position: relative
+    }
+
+    .bar i {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      display: block
+    }
+
+    .bar span {
+      position: absolute;
+      inset: 0;
+      text-align: center;
+      font-size: 11px;
+      line-height: 16px;
+      text-shadow: 0 0 2px #000
+    }
+
+    .s {
+      height: 44px;
+      border: 2px solid #555;
+      background: #0007;
+      position: relative;
+      font-size: 9px;
+      line-height: 1;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-sizing: border-box
+    }
+
+    .s.sel {
+      border-color: #fff
+    }
+
+    .s b {
+      position: absolute;
+      right: 2px;
+      bottom: 1px;
+      font-size: 12px;
+      text-shadow: 0 0 2px #000
+    }
+
+    .s span {
+      text-shadow: 0 0 2px #000;
+      padding: 1px
+    }
+
+    #toast {
+      position: fixed;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000a;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: none;
+      font-size: 14px;
+      text-align: center;
+      z-index: 9
+    }
+
+    #ov {
+      position: fixed;
+      inset: 0;
+      background: #000d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      z-index: 5;
+      overflow: auto
+    }
+
+    #ov h1 {
+      margin: 0 0 8px;
+      font-size: 38px
+    }
+
+    #ov p {
+      max-width: 540px;
+      margin: 6px;
+      opacity: .85;
+      font-size: 13px
+    }
+
+    .mb {
+      background: #355;
+      color: #fff;
+      border: 1px solid #688;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 15px;
+      margin: 4px;
+      cursor: pointer
+    }
+
+    #wn {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #688;
+      background: #123;
+      color: #fff;
+      font-size: 15px
+    }
+
+    #wl {
+      width: min(420px, 92vw);
+      max-height: 28vh;
+      overflow: auto;
+      margin-top: 8px
+    }
+
+    .wr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 0;
+      background: #fff1;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: left
+    }
+
+    #invp {
+      position: fixed;
+      inset: 0;
+      margin: auto;
+      width: min(480px, 96vw);
+      height: fit-content;
+      max-height: 94vh;
+      overflow: auto;
+      background: #222e;
+      border: 2px solid #666;
+      border-radius: 8px;
+      padding: 10px;
+      display: none;
+      z-index: 4;
+      box-sizing: border-box
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 3px;
+      margin-top: 8px
+    }
+
+    #invp .s {
+      height: 46px
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 6px
+    }
+
+    .g3 {
+      display: grid;
+      grid-template-columns: repeat(3, 48px);
+      gap: 3px
+    }
+
+    .g3 .s {
+      width: 48px
+    }
+
+    .row .s {
+      width: 48px;
+      flex: none
+    }
+
+    .t {
+      display: none
+    }
+
+    .touch .t {
+      display: flex
+    }
+
+    #joy {
+      position: fixed;
+      left: calc(18px + env(safe-area-inset-left, 0px));
+      bottom: 90px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #fff3;
+      border: 2px solid #fff6;
+      z-index: 3;
+      touch-action: none
+    }
+
+    #knob {
+      position: absolute;
+      left: 40px;
+      top: 40px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #fff8
+    }
+
+    .btn {
+      position: fixed;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: #fff4;
+      border: 2px solid #fff8;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      z-index: 3;
+      touch-action: none
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud"></div>
+  <div id="cross"></div>
+  <div id="bar"><i></i></div>
+  <div id="toast"></div>
+  <div id="bars">
+    <div class="bar"><i id="hpb" style="background:#d22"></i><span id="hpt"></span></div>
+    <div class="bar"><i id="fdb" style="background:#c82"></i><span id="fdt"></span></div>
+  </div>
+  <div id="off" title="Off-hand (totem only)"></div>
+  <div id="hot"></div>
+  <div id="invp">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b id="pt">Crafting</b><button id="one"
+        class="t"
+        style="background:#355;color:#fff;border:1px solid #688;border-radius:4px;padding:4px 8px;font-size:12px">Take
+        1: OFF</button><button id="rbb" class="mb" style="padding:3px 8px;font-size:12px;margin:0">Recipe book</button><span id="held" style="font-size:12px"></span></div><div id="rbk" style="display:none;max-height:38vh;overflow:auto;background:#0005;border-radius:6px;padding:6px;margin-top:6px"></div>
+    <div class="row" id="cr">
+      <div class="g3" id="cg"></div><span style="font-size:24px">→</span>
+      <div id="co"></div>
+    </div>
+    <div class="row" id="fr">
+      <div style="text-align:center;font-size:11px">Input<div id="f0"></div>
+      </div>
+      <div style="text-align:center;font-size:11px">Fuel<div id="f1"></div>
+      </div><span style="font-size:24px">→</span>
+      <div style="text-align:center;font-size:11px">Output<div id="f2"></div>
+      </div>
+    </div>
+    <div id="fi" style="text-align:center;font-size:12px;margin-top:4px"></div><div class="row" id="av" style="display:none"><div id="a0"></div><button class="mb" id="arb">Reroll enchant (coal)</button></div><div id="ai" style="display:none;text-align:center;font-size:12px;margin-top:4px"></div>
+    <div class="row"><span style="font-size:11px">Off-hand (totem only)</span>
+      <div id="oh"></div>
+    </div>
+    <div class="row"><span style="font-size:11px">Armor</span>
+      <div id="am" style="display:flex;gap:3px"></div><span id="ar" style="font-size:11px"></span>
+    </div>
+    <div id="grid"></div>
+    <div style="font-size:11px;opacity:.7;margin-top:6px">Click a slot to pick up / swap a stack (right-click = one
+      item). E closes. Crafted tools get a random enchant.</div>
+  </div>
+  <div id="joy" class="t">
+    <div id="knob"></div>
+  </div>
+  <div class="btn t" id="bL" style="right:100px;bottom:70px">L</div>
+  <div class="btn t" id="bR" style="right:24px;bottom:110px">R</div>
+  <div class="btn t" id="bJ" style="right:24px;bottom:34px;width:56px;height:56px;font-size:13px">JUMP</div>
+  <div class="btn t" id="bI" style="right:16px;top:60px;width:50px;height:50px;font-size:13px">INV</div>
+  <div class="btn t" id="bM" style="right:74px;top:60px;width:50px;height:50px;font-size:20px">☰</div>
+  <div id="ov">
+    <div id="mm">
+      <h1>BitCraft</h1>
+      <p>3000×3000 world, deep caves, zombies, skeletons and rare Blasters that drop totems. <b>If you die, the world is
+          deleted.</b> Save from the pause menu (☰ on touch, Esc on PC).</p>
+      <input id="wn" placeholder="World name"><button class="mb" id="nw">Create new world</button><button class="mb"
+        id="st1">Controls &amp; settings</button><button class="mb" onclick="fs()">⛶ Fullscreen</button>
+      <div id="wl"></div>
+      <p><b>PC:</b> WASD · Space jump/swim · Shift sprint · Mouse look · Left click break/attack · Right click
+        place/eat/furnace · 1-9/wheel · E inventory<br><b>Touch:</b> joystick, drag right side to look, L =
+        break/attack, R = place/eat/use</p>
+    </div>
+    <div id="pm" style="display:none">
+      <h1>Paused</h1><button class="mb" id="rs">Resume</button><button class="mb" id="sv">Save world</button><button
+        class="mb" id="sq">Save &amp; quit to menu</button><button class="mb" id="st2">Controls &amp;
+        settings</button><button class="mb" onclick="fs()">⛶ Fullscreen</button>
+      <p>The world also autosaves every 90 seconds.</p>
+    </div>
+    <div id="stp" style="display:none">
+      <h1>Controls</h1>
+      <p>Click a binding, then press a key or mouse button (Esc cancels).</p>
+      <div id="kbl" style="width:min(420px,92vw)"></div><button class="mb" id="krst">Reset keybinds</button>
+      <p style="margin-top:12px"><b>Touch controls</b></p><label style="font-size:14px"><input type="checkbox" id="tsh">
+        Show on-screen touch controls</label><br><button class="mb" id="edit">Edit touch layout (move / size /
+        opacity)</button><br><button class="mb" id="stb">Back</button>
+    </div>
+  </div>
+  <style>
+    body.edit .t {
+      outline: 2px dashed #fff
+    }
+  </style>
+  <div id="eb"
+    style="display:none;position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:8;background:#000d;padding:8px 12px;border-radius:8px;font-size:12px;text-align:center">
+    <div id="es">Tap a control to select, drag to move</div>Size <input type="range" id="esz" min=".5" max="2"
+      step=".05"> Opacity <input type="range" id="eop" min=".1" max="1" step=".05"><br><button class="mb"
+      id="erst">Reset all</button><button class="mb" id="edn">Done</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const W = 3000, D = 3000, H = 112, CS = 16, WL = 73, RD = 5, MX = (W - 1) >> 4, $ = id => document.getElementById(id); let SO = 0;
+    const touchMode = 'ontouchstart' in window || navigator.maxTouchPoints > 0; if (touchMode) document.body.classList.add('touch');
+    // ---- items & recipes
+    const IT = {
+      1: {n: 'Grass', c: '#5fa83c', h: .6, d: 2}, 2: {n: 'Dirt', c: '#7a5a38', h: .6}, 3: {n: 'Stone', c: '#888', h: 2.5, t: 1, d: 4}, 4: {n: 'Cobblestone', c: '#6e6e6e', h: 2.5, t: 1}, 5: {n: 'Log', c: '#6b4a2a', h: 2}, 6: {n: 'Leaves', c: '#2f7a2f', h: .2}, 7: {n: 'Planks', c: '#b8894f', h: 1.5}, 8: {n: 'Sand', c: '#e0d08a', h: .5}, 9: {n: 'Coal Ore', c: '#4a4a4a', h: 3, t: 1, d: 21}, 10: {n: 'Iron Ore', c: '#b89478', h: 3.5, t: 2}, 11: {n: 'Gold Ore', c: '#e8c63a', h: 3.5, t: 3}, 12: {n: 'Diamond Ore', c: '#3cd8d8', h: 4, t: 3, d: 24}, 13: {n: 'Bedrock', c: '#222', h: 1e9}, 14: {n: 'Water', c: '#2a5fd0', h: 1e9}, 15: {n: 'Furnace', c: '#777', h: 3, t: 1},
+      20: {n: 'Stick', c: '#8a6a3a'}, 21: {n: 'Coal', c: '#222'}, 22: {n: 'Iron Ingot', c: '#ddd'}, 23: {n: 'Gold Ingot', c: '#fd3'}, 24: {n: 'Diamond', c: '#4ee'}, 25: {n: 'Raw Pork', c: '#e88'}, 26: {n: 'Cooked Pork', c: '#a64'}, 27: {n: 'Rotten Flesh', c: '#7a6'}, 28: {n: 'Totem of Revival', c: '#e8b830', g: '✦'},
+      50: {n: 'Glass', c: '#bfe6f2', h: .4}, 51: {n: 'Stone Bricks', c: '#9a9a9a', h: 2.5, t: 1}, 52: {n: 'Sandstone', c: '#d8c78a', h: 1.2}, 53: {n: 'Terracotta', c: '#b8603a', h: 2}, 54: {n: 'Dark Planks', c: '#5a3a1e', h: 1.5}, 55: {n: 'Lamp', c: '#fff2a0', h: 1}, 56: {n: 'Iron Block', c: '#d4d4d4', h: 4, t: 2}, 57: {n: 'Gold Block', c: '#f5d23a', h: 4, t: 2}, 58: {n: 'Diamond Block', c: '#59e6e6', h: 5, t: 3}
+    };
+    for (let i = 101; i <= 107; i++)IT[i] = {n: 'Water', c: '#2a5fd0', h: 1e9};
+IT[16]={n:'Tree Seed',c:'#7bd36a',h:.1};IT[29]={n:'Apple',c:'#d33'};IT[34]={n:'Golden Apple',c:'#fc3'};IT[59]={n:'Anvil',c:'#555',h:4,t:1};
+    const isW = id => id == 14 || (id > 100 && id < 108), wlv = id => id == 14 ? 8 : (id > 100 && id < 108) ? id - 100 : 0, sol = id => id && !isW(id);
+    const FOOD={25:3,26:9,27:2,29:4}, SM = {4: 3, 10: 22, 11: 23, 25: 26, 8: 50, 2: 53}, FU = {21: 40, 5: 8, 7: 8, 20: 3};
+    const TN = ['Wood', 'Stone', 'Iron', 'Diamond'], TM = [7, 4, 22, 24], TC = ['#b8894f', '#888', '#ddd', '#4ee'];
+    const R = [{p: ['L'], k: {L: 5}, o: 7, n: 4}, {p: ['P', 'P'], k: {P: 7}, o: 20, n: 4}, {p: ['CCC', 'C C', 'CCC'], k: {C: 4}, o: 15, n: 1}, {p: ['SS', 'SS'], k: {S: 3}, o: 51, n: 4}, {p: ['SS', 'SS'], k: {S: 8}, o: 52, n: 1}, {p: ['PPP', 'PCP', 'PPP'], k: {P: 7, C: 21}, o: 54, n: 8}, {p: ['GGG', 'GCG', 'GGG'], k: {G: 50, C: 21}, o: 55, n: 1}];
+    [22,23,24].forEach((m,i)=>R.push({p:['MMM','MMM','MMM'],k:{M:m},o:56+i,n:1}));
+R.push({p:['GGG','GAG','GGG'],k:{G:23,A:29},o:34,n:1},{p:['III',' I ','III'],k:{I:22},o:59,n:1});
+    TN.forEach((t, i) => {
+      IT[30 + i] = {n: t + ' Pickaxe', c: TC[i], tool: 'pick', tier: i + 1, g: 'pickaxe'}; IT[40 + i] = {n: t + ' Sword', c: TC[i], tool: 'sword', tier: i + 1, g: 'sword'};
+      R.push({p: ['MMM', ' S ', ' S '], k: {M: TM[i], S: 20}, o: 30 + i, n: 1}, {p: ['M', 'M', 'S'], k: {M: TM[i], S: 20}, o: 40 + i, n: 1})
+    });
+    const AN = ['Helmet', 'Chestplate', 'Leggings', 'Boots'], AG = ['helmet', 'chestplate', 'leggings', 'boots'], AD = [[2, 6, 5, 2], [2, 5, 3, 1], [3, 8, 6, 3]], AM = ['Iron', 'Gold', 'Diamond'], AI = [22, 23, 24], AC = ['#ddd', '#fd3', '#4ee'], AP = [['MMM', 'M M'], ['M M', 'MMM', 'MMM'], ['MMM', 'M M', 'M M'], ['M M', 'M M']];
+    AM.forEach((m, t) => AN.forEach((n, s) => {const id = 60 + t * 4 + s; IT[id] = {n: m + ' ' + n, c: AC[t], tool: 'armor', arm: s, def: AD[t][s], g: AG[s]}; R.push({p: AP[s], k: {M: AI[t]}, o: id, n: 1})}));
+    const APRE = [{n: 'Brittle', a: .7, w: 2, c: '#f66'}, {n: 'Frail', a: .85, w: 2, c: '#f66'}, {n: 'Sturdy', a: 1.15, w: 3, c: '#6d6'}, {n: 'Reinforced', a: 1.3, w: 2, c: '#6cf'}, {n: 'Fortified', a: 1.45, w: 1, c: '#d7f'}, {n: 'Godly', a: 2, w: .4, c: '#fc3'}];
+    function defSum() {let d = 0; for (const a of ARM) if (a) d += IT[a.id].def * ((a.p && a.p.a) || 1); return d}
+    const defTotal = () => Math.round(defSum()), reduc = () => Math.min(.8, defSum() * .03);
+    function fs() {const d = document, e = d.documentElement; if (d.fullscreenElement || d.webkitFullscreenElement) {(d.exitFullscreen || d.webkitExitFullscreen).call(d)} else {const f = e.requestFullscreen || e.webkitRequestFullscreen; if (f) {const r = f.call(e); if (r && r.catch) r.catch(() => toast('Fullscreen blocked here — try opening the page in its own tab'))} else toast('Fullscreen is not supported on this device')} }
+    const PRE = [{n: 'Dull', s: .75, d: .75, w: 2, c: '#f66'}, {n: 'Keen', s: 1.25, d: 1.2, w: 3, c: '#6d6'}, {n: 'Hasty', s: 1.5, w: 2, c: '#6d6'}, {n: 'Lucky', l: .35, w: 2, c: '#6cf'}, {n: 'Sharp', d: 1.4, w: 2, c: '#6d6'}, {n: 'Savage', d: 1.7, s: .9, w: 1, c: '#d7f'}, {n: 'Swift', m: 1.15, w: 2, c: '#6cf'}, {n: 'Godly', s: 2, d: 1.5, l: 100, m: 1.5, w: .5, c: '#fc3'}];
+    function roll(ar,rn){const RN=rn||Math.random;const L=ar?APRE:PRE; let t = L.reduce((a,p)=>a+p.w,0)*RN(); for (const p of L) {if ((t -= p.w) <= 0) return p} return L[1]}
+    const CNT={},SAP=[];
+function rollSeed(ar,id){let q=(SO*7919+id*104729+(CNT[id]||0)*1299721)>>>0;const rn=()=>{q=(q+0x6D2B79F5)>>>0;let t=q;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};return roll(ar,rn)}
+const pdesc=p=>p?[p.a && 'Armor x' + p.a, p.s && 'Mining x' + p.s, p.d && 'Damage x' + p.d, p.l && Math.round(p.l * 100) + '% double ore', p.m && 'Speed x' + p.m].filter(Boolean).join(', ') : '';
+    // ---- world (chunked, generated on demand)
+    const CH = new Map(), MOD = new Set(), WQ = [];
+    function h(x, y) {const n = Math.sin((x + SO) * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n)}
+    function vn(x, y) {const xi = Math.floor(x), yi = Math.floor(y), a = x - xi, b = y - yi, u = a * a * (3 - 2 * a), v = b * b * (3 - 2 * b); return h(xi, yi) * (1 - u) * (1 - v) + h(xi + 1, yi) * u * (1 - v) + h(xi, yi + 1) * (1 - u) * v + h(xi + 1, yi + 1) * u * v}
+    function wact(x, y, z) {if (WQ.length < 9000) WQ.push(x, y, z)}
+    function gen(cx, cz) {
+      const c = new Uint8Array(16 * H * 16);
+      for (let lx = 0; lx < 16; lx++)for (let lz = 0; lz < 16; lz++) {
+        const x = cx * 16 + lx, z = cz * 16 + lz, hg = Math.floor(64 + vn(x / 45, z / 45) * 20 + vn(x / 14, z / 14) * 5 + vn(x / 5, z / 5) * 1.5);
+        for (let y = 0; y <= Math.max(hg, WL); y++) {
+          let id;
+          if (y > hg) id = 14; else if (y == 0) id = 13; else if (y == hg) id = hg <= WL + 1 ? 8 : 1; else if (y > hg - 4) id = hg <= WL + 1 ? 8 : 2; else {
+            id = 3; const r = h(x * 31 + y * 17, z * 13 + y * 7 + 99);
+            if (r < .03) id = 9; else if (r < .045 && y < 62) id = 10; else if (r < .052 && y < 42) id = 11; else if (r < .057 && y < 26) id = 12
+          }
+          if (y > 3 && y < hg - 1 && id != 14) {
+            const a = vn(x / 14 + y * .13, z / 14 + y * .09), b = vn(z / 14 - y * .11 + 50, x / 14 + y * .12 + 50);
+            if ((Math.abs(a - .5) < .12 && Math.abs(b - .5) < .14) || (y < hg - 8 && vn(x / 16 + y * .3, z / 16 - y * .27) > .8)) id = 0
+          }
+          c[(y * 16 + lz) * 16 + lx] = id
+        }
+        if (lx > 1 && lx < 14 && lz > 1 && lz < 14 && hg > WL + 1 && h(x * 3.3, z * 7.7) > .985 && c[(hg * 16 + lz) * 16 + lx] == 1) {
+          const t = 4 + (h(x, z) > .5 ? 1 : 0); for (let y = 1; y <= t; y++)c[((hg + y) * 16 + lz) * 16 + lx] = 5;
+          for (let dx = -2; dx <= 2; dx++)for (let dz = -2; dz <= 2; dz++)for (let dy = t - 1; dy <= t + 1; dy++) {if (Math.abs(dx) + Math.abs(dz) + (dy - t + 1) > 3 || (!dx && !dz && dy < t + 1)) continue; const i = ((hg + dy + 1) * 16 + lz + dz) * 16 + lx + dx; if (!c[i]) c[i] = 6}
+        }
+      }
+      for (let y = 1; y <= WL; y++)for (let lz = 0; lz < 16; lz++)for (let lx = 0; lx < 16; lx++) {
+        const i = (y * 16 + lz) * 16 + lx; if (c[i] != 14) continue;
+        if (c[i - 256] == 0 || (lx > 0 && c[i - 1] == 0) || (lx < 15 && c[i + 1] == 0) || (lz > 0 && c[i - 16] == 0) || (lz < 15 && c[i + 16] == 0)) wact(cx * 16 + lx, y, cz * 16 + lz)
+      }
+      return c
+    }
+    function chunk(cx, cz) {const k = cx * 256 + cz; let c = CH.get(k); if (!c) {c = gen(cx, cz); CH.set(k, c)} return c}
+    function get(x, y, z) {if (y < 0) return 3; if (y >= H) return 0; if (x < 0 || z < 0 || x >= W || z >= D) return 3; return chunk(x >> 4, z >> 4)[(y * 16 + (z & 15)) * 16 + (x & 15)]}
+    const NB = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    function setb(x, y, z, v, nf) {chunk(x >> 4, z >> 4)[(y * 16 + (z & 15)) * 16 + (x & 15)] = v; MOD.add((x >> 4) * 256 + (z >> 4)); dirty(x, z); if (!v && !nf) {for (const n of NB) wact(x + n[0], y + n[1], z + n[2])} }
+    function wtick() {
+      const q = WQ.splice(0, 1200); for (let i = 0; i < q.length; i += 3) {
+        const x = q[i], y = q[i + 1], z = q[i + 2], id = get(x, y, z), L = wlv(id); if (!L) continue; const b = get(x, y - 1, z);
+        if (b == 0) {setb(x, y - 1, z, 107, 1); wact(x, y - 1, z); continue}
+        if (L > 1 && (sol(b) || b == 14)) for (let f = 0; f < 6; f++) {if (f == 2 || f == 3) continue; const n = NB[f], nx = x + n[0], nz = z + n[2], nb = get(nx, y, nz), nl = wlv(nb); if (nb == 0 || (nl && nb != 14 && nl < L - 1)) {setb(nx, y, nz, 100 + L - 1, 1); wact(nx, y, nz)} }
+      }
+    }
+    // ---- rendering
+    const cv = $('c'), ren = new THREE.WebGLRenderer({canvas: cv, antialias: false}), scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(70, 1, .1, 300);
+    cam.rotation.order = 'YXZ'; scene.fog = new THREE.Fog(0x87ceeb, 25, 70);
+    const mat = new THREE.MeshBasicMaterial({vertexColors: true, side: THREE.DoubleSide}), meshes = {}, dq = new Set(), SH = [.8, .8, 1, .5, .65, .65];
+    const FC = [[[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]];
+    const cc = {}; function rgb(s) {return cc[s] || (cc[s] = new THREE.Color(s))}
+    function dirty(x, z) {const a = x >> 4, b = z >> 4; dq.add(a + ',' + b); if (x % CS == 0) dq.add((a - 1) + ',' + b); if (x % CS == 15) dq.add((a + 1) + ',' + b); if (z % CS == 0) dq.add(a + ',' + (b - 1)); if (z % CS == 15) dq.add(a + ',' + (b + 1))}
+    function build(k) {
+      const [cx, cz] = k.split(',').map(Number); if (cx < 0 || cz < 0 || cx > MX || cz > MX) return; if (meshes[k]) {scene.remove(meshes[k]); meshes[k].geometry.dispose()}
+      const P = [], C = [], I = [], c = chunk(cx, cz); for (let lx = 0; lx < 16; lx++)for (let lz = 0; lz < 16; lz++)for (let y = 0; y < H; y++) {
+        const b = c[(y * 16 + lz) * 16 + lx]; if (!b) continue; const x = cx * 16 + lx, z = cz * 16 + lz, wb = isW(b);
+        for (let f = 0; f < 6; f++) {
+          const n = NB[f], ll = lx + n[0], lm = lz + n[2], gy = y + n[1], nb = (ll >= 0 && ll < 16 && lm >= 0 && lm < 16 && gy >= 0 && gy < H) ? c[(gy * 16 + lm) * 16 + ll] : get(x + n[0], gy, z + n[2]); if (nb && !(isW(nb) && !wb)) continue;
+          let col = IT[b].c; if (b == 1 && f != 2) col = f == 3 ? '#7a5a38' : '#6f7a3c'; if (b == 5 && f >= 2 && f <= 3) col = '#a8844f'; if (b == 15 && f == 4) col = '#f93';
+          const cl = rgb(col), s = (b == 55 ? 1 : SH[f]) * (.88 + .12 * h(x + y * 3.1 + f, z * 1.7 + y)), o = P.length / 3;
+          for (const v of FC[f]) {P.push(x + v[0], y + v[1] - (wb && f == 2 ? .1 : 0), z + v[2]); C.push(cl.r * s, cl.g * s, cl.b * s)} I.push(o, o + 1, o + 2, o, o + 2, o + 3)
+        }
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setIndex(I);
+      const m = new THREE.Mesh(g, mat); m.frustumCulled = false; scene.add(m); meshes[k] = m
+    }
+    const sunM = new THREE.MeshBasicMaterial({color: 0xffee88, fog: false}), moonM = new THREE.MeshBasicMaterial({color: 0xddddff, fog: false});
+    const sun = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), sunM), moon = new THREE.Mesh(new THREE.PlaneGeometry(22, 22), moonM); scene.add(sun, moon);
+    const hl = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.01, 1.01, 1.01)), new THREE.LineBasicMaterial({color: 0})); scene.add(hl);
+    // ---- player
+    const P = {x: W / 2 + .5, y: 0, z: D / 2 + .5, vx: 0, vy: 0, vz: 0, g: false, yaw: 0, pitch: 0}; let hp = 20, fd = 20, since = 0, hs = 0, dead = false, inGame = false, curW = '', wname = '';
+    function spawn() {P.x = W / 2 + .5; P.z = D / 2 + .5; let y = H - 1; while (y > 0 && !get(P.x | 0, y, P.z | 0)) y--; P.y = y + 1; P.vy = 0}
+    function hit(x, y, z, w, hh) {for (let i = Math.floor(x - w); i <= Math.floor(x + w); i++)for (let j = Math.floor(y); j <= Math.floor(y + hh); j++)for (let k = Math.floor(z - w); k <= Math.floor(z + w); k++)if (sol(get(i, j, k))) return true; return false}
+    // ---- inventory / crafting / furnace
+    const inv = Array(36).fill(null), cg = Array(9).fill(null), OFF = [null], ARM = [null, null, null, null], FUR = {}; let cur = 0, curs = null, invOpen = 0, fk = '', pk = 0, pp = null, co = [null], oneMode = 0;
+    function add(id,n=1,p,rr){
+      const t = IT[id]; if (!t.tool) for (const s of inv) if (s && s.id == id && s.n < 64) {const k = Math.min(64 - s.n, n); s.n += k; n -= k; if (!n) return }
+      while (n > 0) {const i = inv.indexOf(null); if (i < 0) return; const k = t.tool ? 1 : Math.min(64, n); inv[i]={id,n:k,p,rr}; n -= k}
+    }
+    function giveTotem() {if (!OFF[0]) OFF[0] = {id: 28, n: 1}; else add(28)}
+    const nm = s => (s.p ? s.p.n + ' ' : '') + IT[s.id].n;
+    function el(s, sel) {
+      const d = document.createElement('div'); d.className = 's' + (sel ? ' sel' : ''); if (s) {
+        const t = IT[s.id]; d.style.background = t.c; d.title = nm(s) + (s.p ? ' — ' + pdesc(s.p) : '');
+        d.innerHTML = '<span>' + (t.g ? t.g + '<br>' : '') + (s.p ? '<i style="color:' + s.p.c + ';font-style:normal">' + s.p.n + '</i>' : t.n) + '</span>' + (s.n > 1 ? '<b>' + s.n + '</b>' : '')
+      } return d
+    }
+    function click(arr,i,out,o1){if(arr===ANV&&curs&&!IT[curs.id].tool){toast('Only tools and armor can be enchanted');return}
+      if (arr === OFF && curs && curs.id != 28) {toast('Off-hand only holds a Totem of Revival'); return } if (arr === ARM && curs && IT[curs.id].arm !== i) {toast('That armor goes in a different slot'); return } const a = arr[i];
+      if (!out && (o1 || oneMode)) {if (!curs && a && !IT[a.id].tool) {curs = {id: a.id, n: 1}; if (--a.n <= 0) arr[i] = null; return } if (curs && !IT[curs.id].tool && (!a || (a.id == curs.id && a.n < 64))) {if (a) a.n++; else arr[i] = {id: curs.id, n: 1}; if (--curs.n <= 0) curs = null; return } }
+      if (out) {if (a && (!curs || (curs.id == a.id && !IT[a.id].tool && curs.n + a.n <= 64))) {if (curs) curs.n += a.n; else curs = a; arr[i] = null} return }
+      if (a && curs && a.id == curs.id && !IT[a.id].tool) {const k = Math.min(64 - a.n, curs.n); a.n += k; curs.n -= k; if (!curs.n) curs = null} else {arr[i] = curs; curs = a}
+    }
+    function slot(arr, i, kind) {const d = el(arr[i], kind == 'hot' && i == cur); d.onpointerdown = e => {e.stopPropagation(); if (kind == 'off' && !invOpen) return; if (kind == 'hot' && !invOpen) cur = i; else click(arr, i, kind == 'out', e.button == 2); ui()}; return d}
+    function match() {
+      let r0 = 3, r1 = -1, c0 = 3, c1 = -1; for (let i = 0; i < 9; i++)if (cg[i]) {const r = i / 3 | 0, c = i % 3; r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c)}
+      if (r1 < 0) return null; for (const rc of R) {
+        const p = rc.p; if (p.length != r1 - r0 + 1 || p[0].length != c1 - c0 + 1) continue; let ok = true;
+        for (let r = r0; r <= r1 && ok; r++)for (let c = c0; c <= c1; c++) {const ch = p[r - r0][c - c0], g = cg[r * 3 + c]; if (ch == ' ' ? g : (!g || g.id != rc.k[ch])) {ok = false; break} }
+        if (ok) return rc
+      } return null
+    }
+    function ui() {
+      const hb = $('hot'); hb.innerHTML = ''; for (let i = 0; i < 9; i++)hb.append(slot(inv, i, 'hot')); $('off').innerHTML = ''; $('off').append(slot(OFF, 0, 'off'));
+      if (!invOpen) return; $('oh').innerHTML = ''; $('oh').append(slot(OFF, 0, 'off')); const am = $('am'); am.innerHTML = ''; for (let i = 0; i < 4; i++) {const sl = slot(ARM, i, 'n'); if (!ARM[i]) sl.innerHTML = '<span style="opacity:.5">' + ['Head', 'Chest', 'Legs', 'Feet'][i] + '</span>'; am.append(sl)} $('ar').textContent = 'Defense ' + defTotal() + ' (' + Math.round(reduc() * 100) + '% less damage)'; $('cr').style.display = invOpen == 1 ? 'flex' : 'none'; $('fr').style.display = invOpen == 2 ? 'flex' : 'none'; $('fi').style.display = invOpen == 2 ? 'block' : 'none'; $('pt').textContent=invOpen==1?'Crafting (3×3)':invOpen==2?'Furnace':'Anvil';$('av').style.display=invOpen==3?'flex':'none';$('ai').style.display=invOpen==3?'block':'none';
+      const g = $('grid'); g.innerHTML = ''; for (let i = 0; i < 36; i++)g.append(slot(inv, i, 'n')); $('held').textContent = curs ? 'Holding: ' + nm(curs) + ' x' + curs.n : '';
+      if (invOpen == 1) {
+        const q = $('cg'); q.innerHTML = ''; for (let i = 0; i < 9; i++)q.append(slot(cg, i, 'n')); const r = match(); if (r) {if (pk != r.o || !pp) {pk = r.o; pp=rollSeed(IT[r.o].arm!=null,r.o)} } else pk = 0;
+        co[0] = r ? {id: r.o, n: r.n, p: IT[r.o].tool ? pp : undefined} : null; const o = el(co[0]); o.onpointerdown = e => {
+          e.stopPropagation(); const x = co[0]; if (!x || (curs && (curs.id != x.id || IT[x.id].tool || curs.n + x.n > 64))) return;
+          for (let i = 0; i < 9; i++) {const s = cg[i]; if (s && --s.n <= 0) cg[i] = null} if (curs) curs.n += x.n; else curs = {...x}; if(x.p)toast('Enchanted: '+nm(x));CNT[x.id]=(CNT[x.id]||0)+1;pp=null;ui()
+        }; $('co').innerHTML = ''; $('co').append(o)
+      }
+      else if(invOpen==3){const s=ANV[0],q=$('a0');q.innerHTML='';q.append(slot(ANV,0,'n'));const cost=2+Math.min(10,(s&&s.rr)||0);$('ai').textContent=s?(nm(s)+(s.p?' — '+pdesc(s.p):'')+' · Reroll cost: '+cost+' coal (you have '+invCount(21)+')'):'Place a tool or armor piece in the slot. Each reroll costs coal, and costs more every time.';$('arb').disabled=!s}else{const f=FUR[fk]; for (let i = 0; i < 3; i++) {const q = $('f' + i); q.innerHTML = ''; q.append(slot(f.s, i, i == 2 ? 'out' : 'n'))} $('fi').textContent = f.burn > 0 ? '🔥 Smelting… ' + Math.ceil(f.burn) + 's of fuel left' : 'Input: ores, sand, dirt, cobble, pork · Fuel: coal or wood'}
+    }
+    function open(m) {
+      if (m && document.pointerLockElement) document.exitPointerLock();
+      if (!m) {for (let i = 0; i < 9; i++)if (cg[i]) {add(cg[i].id, cg[i].n, cg[i].p); cg[i] = null} if(ANV[0]){const a=ANV[0];ANV[0]=null;const i=inv.indexOf(null);if(i>=0)inv[i]=a;else add(a.id,1,a.p,a.rr)}if(curs){add(curs.id,curs.n,curs.p,curs.rr);curs=null}}
+      invOpen = m; $('invp').style.display = m ? 'block' : 'none'; if (!m && !touchMode && playing) cv.requestPointerLock(); ui()
+    }
+    function fur(dt) {
+      for (const k in FUR) {
+        const f = FUR[k], i = f.s[0], fl = f.s[1], o = f.s[2], out = i && SM[i.id]; if (!out || (o && (o.id != out || o.n >= 64))) {f.prog = 0; continue}
+        if (f.burn <= 0 && fl && FU[fl.id]) {f.burn = FU[fl.id]; fl.n--; if (!fl.n) f.s[1] = null}
+        if (f.burn > 0) {f.burn -= dt; f.prog += dt; if (f.prog >= 4) {f.prog = 0; i.n--; if (!i.n) f.s[0] = null; if (o) o.n++; else f.s[2] = {id: out, n: 1}} } else f.prog = 0
+      }
+    }
+    let tt; function toast(m) {const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => t.style.display = 'none', 2200)}
+    const ANV=[null],invCount=id=>inv.reduce((a,s)=>a+(s&&s.id==id?s.n:0),0);
+function invTake(id,n){for(let i=0;i<36&&n>0;i++){const s=inv[i];if(s&&s.id==id){const k=Math.min(n,s.n);s.n-=k;n-=k;if(!s.n)inv[i]=null}}}
+$('arb').onpointerdown=e=>e.stopPropagation();
+$('arb').onclick=()=>{const s=ANV[0];if(!s)return;const cost=2+Math.min(10,s.rr||0);if(invCount(21)<cost){toast('Need '+cost+' coal');return}invTake(21,cost);const ar=IT[s.id].arm!=null;let p=roll(ar);for(let i=0;i<8&&s.p&&p.n===s.p.n;i++)p=roll(ar);s.p=p;s.rr=(s.rr||0)+1;toast('Rerolled: '+nm(s));ui()};
+function renderRB(){const b=$('rbk');b.innerHTML='';
+ for(const r of R){const d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;text-align:left';const g=document.createElement('div');g.style.cssText='display:grid;gap:1px;flex:none;grid-template-columns:repeat('+r.p[0].length+',20px)';const cnt={};
+  for(const row of r.p)for(const ch of row){const c=document.createElement('div');c.style.cssText='width:20px;height:20px;background:#0006;font-size:7px;line-height:9px;overflow:hidden;text-shadow:0 0 2px #000;text-align:center';if(ch!=' '){const t=IT[r.k[ch]];c.style.background=t.c;c.textContent=t.n.slice(0,3);cnt[t.n]=(cnt[t.n]||0)+1}g.append(c)}
+  const l=document.createElement('span');l.innerHTML='<b>'+r.n+'x '+IT[r.o].n+'</b><br><span style="opacity:.7">'+Object.entries(cnt).map(([k,v])=>v+' '+k).join(', ')+'</span>';d.append(g,l);b.append(d)}
+ const f=document.createElement('div');f.style.cssText='margin-top:8px;font-size:12px;text-align:left';f.innerHTML='<b>Furnace smelting</b><br>'+Object.entries(SM).map(([a,o])=>IT[a].n+' → '+IT[o].n).join('<br>')+'<br><span style="opacity:.7">Fuel: coal, logs, planks, sticks</span>';b.append(f)}
+$('rbb').onclick=()=>{const b=$('rbk');if(b.style.display=='none'){renderRB();b.style.display='block'}else b.style.display='none'};
+function growTree(x,y,z){const t=4+(Math.random()<.5?1:0);for(let i=1;i<t+2;i++){const b=get(x,y+i,z);if(b&&b!=6)return false}
+ for(let i=0;i<t;i++)setb(x,y+i,z,5,1);
+ for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=t-1;dy<=t+1;dy++){if(Math.abs(dx)+Math.abs(dz)+(dy-t+1)>3||(!dx&&!dz&&dy<t+1))continue;if(!get(x+dx,y+dy,z+dz))setb(x+dx,y+dy,z+dz,6,1)}return true}
+let sapt=0;function sapTick(dt){if((sapt+=dt)<1)return;sapt=0;for(let i=SAP.length-1;i>=0;i--){const s=SAP[i];if(get(s.x,s.y,s.z)!=16){SAP.splice(i,1);continue}if((s.t-=1)<=0){SAP.splice(i,1);if(growTree(s.x,s.y,s.z)===false){s.t=30;SAP.push(s)}}}}
+$('one').onpointerdown=e=>{e.stopPropagation(); oneMode ^= 1; $('one').textContent = 'Take 1: ' + (oneMode ? 'ON' : 'OFF'); $('one').style.background = oneMode ? '#2a7' : '#355'};
+    const held = () => inv[cur], stat = (k, d) => {const s = held(); return s && s.p && s.p[k] != null ? s.p[k] : d};
+    // ---- save / load
+    const rle = c => {const o = []; let v = c[0], n = 1; for (let i = 1; i < c.length; i++) {if (c[i] == v) n++; else {o.push(v, n); v = c[i]; n = 1} } o.push(v, n); return o};
+    const unrle = o => {const c = new Uint8Array(16 * H * 16); let p = 0; for (let i = 0; i < o.length; i += 2) {c.fill(o[i], p, p + o[i + 1]); p += o[i + 1]} return c};
+    const ixr = () => {try {return JSON.parse(localStorage.getItem('bc_ix') || '[]')} catch (e) {return []} };
+    function saveWorld(q) {
+      try {
+        const ch = {}; MOD.forEach(k => ch[k] = rle(CH.get(k))); localStorage.setItem('bc_w_' + curW, JSON.stringify({so: SO, T, hp, fd, P: {x: P.x, y: P.y, z: P.z, yaw: P.yaw, pitch: P.pitch}, inv, arm: ARM, off: OFF[0], cur,fur:FUR,cnt:CNT,sap:SAP,ch}));
+        const ix = ixr(), e = ix.find(w => w.id == curW); if (e) e.t = Date.now(); else ix.push({id: curW, n: wname, t: Date.now()}); localStorage.setItem('bc_ix', JSON.stringify(ix)); toast(q ? 'Autosaved' : 'World saved'); return true
+      } catch (e) {toast('Save failed (storage full or blocked)'); return false}
+    }
+    function delWorld(id) {try {localStorage.removeItem('bc_w_' + id); localStorage.setItem('bc_ix', JSON.stringify(ixr().filter(w => w.id != id)))} catch (e) { } }
+    function startWorld(id, name) {
+      curW = id; wname = name; let d = null; try {d = JSON.parse(localStorage.getItem('bc_w_' + id))} catch (e) { }
+      SO = d ? d.so : Math.floor(Math.random() * 3000); CH.clear(); MOD.clear(); WQ.length=0;SAP.length=0;for(const k in CNT)delete CNT[k];for(const k in meshes) {scene.remove(meshes[k]); meshes[k].geometry.dispose(); delete meshes[k]}
+      if (d) {T = d.T; hp = d.hp; fd = d.fd; Object.assign(P, d.P); inv.fill(null); ARM.fill(null); (d.arm || []).forEach((s, i) => ARM[i] = s); d.inv.forEach((s, i) => inv[i] = s); OFF[0]=d.off||null;Object.assign(CNT,d.cnt||{});(d.sap||[]).forEach(q=>SAP.push(q)); cur = d.cur || 0; for (const k in d.fur || {}) FUR[k] = d.fur[k]; for (const k in d.ch) {CH.set(+k, unrle(d.ch[k])); MOD.add(+k)} } else spawn();
+      inGame = true; playing = true; $('ov').style.display = 'none'; ui(); if (!touchMode) cv.requestPointerLock(); if (!d) saveWorld(1)
+    }
+    function renderWL() {
+      const w = $('wl'); w.innerHTML = ''; const ix = ixr(); if (!ix.length) w.textContent = 'No saved worlds yet.';
+      ix.forEach(e => {
+        const r = document.createElement('div'); r.className = 'wr'; const s = document.createElement('span'); s.textContent = e.n + ' — ' + new Date(e.t).toLocaleDateString(); r.append(s);
+        const p = document.createElement('button'); p.className = 'mb'; p.textContent = 'Play'; p.onclick = () => startWorld(e.id, e.n); const d = document.createElement('button'); d.className = 'mb'; d.textContent = 'Delete';
+        d.onclick = () => {if (d.dataset.c) {delWorld(e.id); renderWL()} else {d.dataset.c = 1; d.textContent = 'Sure?'} }; r.append(p, d); w.append(r)
+      })
+    }
+    $('nw').onclick = () => startWorld('w' + Date.now().toString(36), $('wn').value.trim() || 'World ' + (ixr().length + 1)); renderWL();
+    function pause() {if (!inGame || dead) return; if (invOpen) open(0); playing = false; $('mm').style.display = 'none'; $('pm').style.display = 'block'; $('ov').style.display = 'flex'}
+    $('rs').onclick = () => {$('ov').style.display = 'none'; playing = true; if (!touchMode) cv.requestPointerLock()}; $('sv').onclick = () => saveWorld(); $('sq').onclick = () => {if (saveWorld()) location.reload()};
+    // ---- settings: keybinds & touch layout
+    const KN = {fwd: 'Move forward', back: 'Move backward', left: 'Move left', right: 'Move right', jump: 'Jump / swim up', sprint: 'Sprint', inv: 'Inventory', menu: 'Pause menu (Esc also works)', atk: 'Break / attack', use: 'Place / eat / use', fs: 'Toggle fullscreen'}, KD = {fwd: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', sprint: 'ShiftLeft', inv: 'KeyE', menu: 'KeyP', atk: 'Mouse0', use: 'Mouse2', fs: 'KeyF'};
+    let KB = {...KD}, TL = {}, rb = null, ed = 0, sel = 'bL', dg = null, stFrom = 'mm';
+    try {Object.assign(KB, JSON.parse(localStorage.getItem('bc_kb') || '{}')); TL = JSON.parse(localStorage.getItem('bc_tl') || '{}')} catch (e) { }
+    const saveKB = () => {try {localStorage.setItem('bc_kb', JSON.stringify(KB))} catch (e) { } }, saveTL = () => {try {localStorage.setItem('bc_tl', JSON.stringify(TL))} catch (e) { } };
+    const kname = c => c == 'Mouse0' ? 'Left click' : c == 'Mouse1' ? 'Middle click' : c == 'Mouse2' ? 'Right click' : c.replace(/^Key|^Digit/, '');
+    function bindKey(c) {const a = rb.a; for (const o in KB) if (o != a && KB[o] == c) KB[o] = KB[a]; KB[a] = c; rb = null; saveKB(); renderKB()}
+    function renderKB() {const l = $('kbl'); l.innerHTML = ''; for (const a in KN) {const r = document.createElement('div'); r.className = 'wr'; const s = document.createElement('span'); s.textContent = KN[a]; const b = document.createElement('button'); b.className = 'mb'; b.textContent = rb && rb.a == a ? 'Press key / click…' : kname(KB[a]); b.onclick = () => {rb = {a}; renderKB()}; r.append(s, b); l.append(r)} }
+    const BS = {joy: 120, bL: 62, bR: 62, bJ: 56, bI: 50, bM: 50}, NAMES = {joy: 'Joystick', bL: 'L (break/attack)', bR: 'R (place/use)', bJ: 'Jump', bI: 'Inventory', bM: 'Menu'}, ORIG = {}; for (const id in BS) ORIG[id] = $(id).getAttribute('style') || '';
+    function syncTouch() {document.body.classList.toggle('touch', !!ed || !!(TL.show ?? touchMode))}
+    function applyTL() {for (const id in BS) {const e = $(id), c = TL[id] || {}, z = BS[id] * (c.s || 1); e.setAttribute('style', ORIG[id]); e.style.width = e.style.height = z + 'px'; e.style.opacity = c.o ?? 1; if (c.x != null) {e.style.left = (c.x * innerWidth - z / 2) + 'px'; e.style.top = (c.y * innerHeight - z / 2) + 'px'; e.style.right = e.style.bottom = 'auto'} } const k = $('knob'), kz = BS.joy * ((TL.joy || {}).s || 1) / 3; k.style.width = k.style.height = k.style.left = k.style.top = kz + 'px'}
+    function updEB() {const c = TL[sel] || {}; $('es').textContent = 'Selected: ' + NAMES[sel] + ' — drag to move'; $('esz').value = c.s || 1; $('eop').value = c.o ?? 1}
+    $('esz').oninput = () => {(TL[sel] = TL[sel] || {}).s = +$('esz').value; applyTL()}; $('eop').oninput = () => {(TL[sel] = TL[sel] || {}).o = +$('eop').value; applyTL()};
+    $('erst').onclick = () => {TL = {show: TL.show}; applyTL(); updEB(); saveTL()};
+    $('edit').onclick = () => {ed = 1; document.body.classList.add('edit'); syncTouch(); $('ov').style.display = 'none'; $('eb').style.display = 'block'; updEB()};
+    $('edn').onclick = () => {ed = 0; dg = null; document.body.classList.remove('edit'); syncTouch(); $('eb').style.display = 'none'; $('ov').style.display = 'flex'; saveTL()};
+    document.addEventListener('pointerdown', e => {if (!ed) return; const c = e.target.closest && e.target.closest('.btn,#joy'); if (c) {e.stopPropagation(); e.preventDefault(); dg = sel = c.id; updEB()} }, true);
+    document.addEventListener('pointermove', e => {if (!ed || !dg) return; const c = TL[dg] = TL[dg] || {}; c.x = Math.min(1, Math.max(0, e.clientX / innerWidth)); c.y = Math.min(1, Math.max(0, e.clientY / innerHeight)); applyTL()});
+    document.addEventListener('pointerup', () => {if (dg) {dg = null; saveTL()} }); addEventListener('resize', applyTL);
+    function openSt(f) {stFrom = f; $(f).style.display = 'none'; $('stp').style.display = 'block'; renderKB(); $('tsh').checked = !!(TL.show ?? touchMode)}
+    $('st1').onclick = () => openSt('mm'); $('st2').onclick = () => openSt('pm'); $('stb').onclick = () => {rb = null; $('stp').style.display = 'none'; $(stFrom).style.display = 'block'};
+    $('krst').onclick = () => {KB = {...KD}; saveKB(); renderKB()}; $('tsh').onchange = () => {TL.show = $('tsh').checked; saveTL(); syncTouch()}; syncTouch(); applyTL();
+    // ---- mobs
+    const M = [], A = [], GEO = {z: new THREE.BoxGeometry(.6, 1.8, .6), s: new THREE.BoxGeometry(.5, 1.8, .4), b: new THREE.BoxGeometry(.8, 1.5, .8), p: new THREE.BoxGeometry(.6, .9, .6)},
+      MC = {z: [.24, .54, .24], s: [.85, .85, .8], b: [.95, .45, .1], p: [.94, .63, .63]}, HH = {z: 1.8, s: 1.8, b: 1.5, p: .9}, HPM = {z: 12, s: 10, b: 14, p: 6}, MT = {}, ag = new THREE.BoxGeometry(.06, .06, .5), am = new THREE.MeshBasicMaterial({color: 0x333333});
+    for (const k in MC) MT[k] = new THREE.MeshBasicMaterial();
+    const hostile = () => {const r = Math.random(); return r < .06 ? 'b' : r < .45 ? 's' : 'z'};
+    function spawnM(k) {
+      const a = Math.random() * 6.28, d = (k == 'p' ? 10 : 14) + Math.random() * 12, x = P.x + Math.cos(a) * d, z = P.z + Math.sin(a) * d; if (x < 2 || z < 2 || x > W - 2 || z > D - 2) return; let y = H - 1; while (y > 0 && !sol(get(x | 0, y - 1, z | 0))) y--;
+      if (isW(get(x | 0, y, z | 0)) || (k == 'p' && get(x | 0, y - 1, z | 0) != 1)) return; const m = new THREE.Mesh(GEO[k], MT[k]); scene.add(m); M.push({x, y, z, vy: 0, hp: HPM[k], m, cd: 0, g: false, k, hh: HH[k], w: 0, a: 0, go: 0, fu: 0})
+    }
+    function rmM(i) {scene.remove(M[i].m); M.splice(i, 1)}
+    function shoot(q) {const ox = q.x, oy = q.y + 1.5, oz = q.z, dx = P.x - ox, dy = P.y + 1.2 - oy, dz = P.z - oz, d = Math.hypot(dx, dy, dz) || 1, s = 17, m = new THREE.Mesh(ag, am); scene.add(m); A.push({m, x: ox, y: oy, z: oz, vx: dx / d * s + (Math.random() - .5) * 1.5, vy: dy / d * s + d * .18, vz: dz / d * s + (Math.random() - .5) * 1.5, l: 3})}
+    function boom(q) {
+      const r = 3; for (let dx = -r; dx <= r; dx++)for (let dy = -r; dy <= r; dy++)for (let dz = -r; dz <= r; dz++) {if (dx * dx + dy * dy + dz * dz > r * r + 1) continue; const x = Math.floor(q.x) + dx, y = Math.floor(q.y + .7) + dy, z = Math.floor(q.z) + dz, b = get(x, y, z); if (b && b != 13 && !isW(b) && y > 0) setb(x, y, z, 0)}
+      const d = Math.hypot(P.x - q.x, P.y + 1 - q.y, P.z - q.z); if (d < 6) hurt(Math.max(1, Math.round(16 * (1 - d / 6))))
+    }
+    function hurt(n, raw) {
+      if (dead) return; if (!raw) n = Math.max(.5, n * (1 - reduc())); hp -= n; since = 0; if (hp <= 0) {
+        const t = OFF[0]; if (t && t.id == 28) {if (--t.n <= 0) OFF[0] = null; hp = 10; fd = Math.max(fd, 10); toast('✦ Totem of Revival saved you!'); ui(); return }
+        dead = true; playing = false; if (document.pointerLockElement) document.exitPointerLock(); toast('You died! This world has been deleted.'); delWorld(curW); setTimeout(() => location.reload(), 2500)
+      }
+    }
+    // ---- input
+    const keys = {}; let breaking = false, jx = 0, jz = 0, jump = false, playing = false, bp = 0, bk = '', tgt = null, prv = null;
+    addEventListener('keydown', e => {if (rb) {e.preventDefault(); if (e.code == 'Escape') {rb = null; renderKB()} else bindKey(e.code); return } keys[e.code] = 1; if (!playing) return; if (e.code == KB.inv) open(invOpen ? 0 : 1); if (e.code == KB.menu) pause(); if (e.code == KB.atk) {breaking = true; attack()} if (e.code == KB.use) place(); if (e.code == KB.fs) fs(); if (e.code >= 'Digit1' && e.code <= 'Digit9') {cur = +e.key - 1; ui()} }); addEventListener('keyup', e => {keys[e.code] = 0; if (e.code == KB.atk) breaking = false});
+    addEventListener('wheel', e => {cur = (cur + (e.deltaY > 0 ? 1 : 8)) % 9; ui()});
+    addEventListener('mousemove', e => {if (document.pointerLockElement == cv) {P.yaw -= e.movementX * .0022; P.pitch = Math.max(-1.55, Math.min(1.55, P.pitch - e.movementY * .0022))} });
+    addEventListener('contextmenu', e => e.preventDefault());
+    addEventListener('mousedown', e => {const c = 'Mouse' + e.button; if (rb) {e.preventDefault(); bindKey(c); return } keys[c] = 1; if (document.pointerLockElement != cv) return; if (c == KB.atk) {breaking = true; attack()} if (c == KB.use) place()}); addEventListener('mouseup', e => {const c = 'Mouse' + e.button; keys[c] = 0; if (c == KB.atk) breaking = false});
+    document.addEventListener('pointerlockchange', () => {if (!document.pointerLockElement && !invOpen && !touchMode && inGame && playing) pause()});
+    let lt = null, lx, ly; cv.addEventListener('pointerdown', e => {if (e.pointerType == 'touch' && lt == null) {lt = e.pointerId; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(lt)} });
+    cv.addEventListener('pointermove', e => {if (e.pointerId == lt) {P.yaw -= (e.clientX - lx) * .005; P.pitch = Math.max(-1.55, Math.min(1.55, P.pitch - (e.clientY - ly) * .005)); lx = e.clientX; ly = e.clientY} });
+    const lend = e => {if (e.pointerId == lt) lt = null}; cv.addEventListener('pointerup', lend); cv.addEventListener('pointercancel', lend);
+    const joy = $('joy'); let jid = null; function jm(e) {const r = joy.getBoundingClientRect(), hw = r.width / 2, mr = hw * .83; let dx = e.clientX - r.left - hw, dy = e.clientY - r.top - hw; const l = Math.hypot(dx, dy), m = Math.min(l, mr); if (l) dx *= m / l, dy *= m / l; jx = dx / mr; jz = dy / mr; $('knob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)'}
+    joy.onpointerdown = e => {jid = e.pointerId; joy.setPointerCapture(jid); jm(e)}; joy.onpointermove = e => {if (e.pointerId == jid) jm(e)}; joy.onpointerup = joy.onpointercancel = () => {jid = null; jx = jz = 0; $('knob').style.transform = ''};
+    $('bL').onpointerdown = e => {e.preventDefault(); breaking = true; attack()}; $('bL').onpointerup = $('bL').onpointercancel = () => breaking = false;
+    $('bR').onpointerdown = e => {e.preventDefault(); place()}; $('bJ').onpointerdown = () => jump = true; $('bJ').onpointerup = () => jump = false; $('bI').onpointerdown = () => {if (playing) open(invOpen ? 0 : 1)}; $('bM').onpointerdown = () => pause();
+    function attack() {
+      if (!playing || invOpen) return; const s = held(), t = s && IT[s.id], dmg = (t && t.tool == 'sword' ? [1, 4, 5, 6, 8][t.tier] : t && t.tool ? 2 : 1) * stat('d', 1);
+      const dx = -Math.sin(P.yaw) * Math.cos(P.pitch), dy = Math.sin(P.pitch), dz = -Math.cos(P.yaw) * Math.cos(P.pitch);
+      for (let i = M.length - 1; i >= 0; i--) {
+        const q = M[i], vx = q.x - P.x, vy = q.y + q.hh / 2 - (P.y + 1.62), vz = q.z - P.z, d = Math.hypot(vx, vy, vz); if (d < 3.6 && (vx * dx + vy * dy + vz * dz) / d > .9) {
+          q.hp -= dmg; q.x += vx / d * .6; q.z += vz / d * .6; q.vy = 4;
+          if (q.hp <= 0) {if (q.k == 'z') {if (Math.random() < .6) {add(27); toast('Zombie dropped Rotten Flesh')} } else if (q.k == 's') {add(21, 1 + (Math.random() < .5 ? 1 : 0)); toast('Skeleton dropped Coal')} else if (q.k == 'b') {giveTotem(); toast('✦ Blaster dropped a Totem of Revival!')} else {add(25, 1 + (Math.random() < .5 ? 1 : 0)); toast('Pig dropped Raw Pork')} rmM(i); ui()} return
+        }
+      }
+    }
+    function place() {
+      if (!playing || invOpen) return; const s = held();
+      if (tgt && get(tgt[0], tgt[1], tgt[2]) == 15) {fk = tgt.join(); FUR[fk] = FUR[fk] || {s: [null, null, null], burn: 0, prog: 0}; open(2);return}if(tgt&&get(tgt[0],tgt[1],tgt[2])==59){open(3);return}
+      if (!s) return; if (IT[s.id].arm != null) {const sl = IT[s.id].arm, o = ARM[sl]; ARM[sl] = s; inv[cur] = o; ui(); toast('Equipped ' + nm(s)); return } if(s.id==34){if(hp>=20){toast('Already at full health');return}hp=20;since=0;fd=Math.min(20,fd+4);s.n--;if(!s.n)inv[cur]=null;ui();toast('Golden Apple: fully healed!');return}if(FOOD[s.id]){if (fd < 20 || hp < 20) {fd = Math.min(20, fd + FOOD[s.id]); s.n--; if (!s.n) inv[cur] = null; ui()} return }
+      if(!tgt||!prv||IT[s.id].tool||(s.id>=20&&s.id<50))return;if(s.id==16){const tb=get(tgt[0],tgt[1],tgt[2]);if((tb!=1&&tb!=2)||prv[1]!=tgt[1]+1){toast('Plant seeds on top of grass or dirt');return}SAP.push({x:prv[0],y:prv[1],z:prv[2],t:45+Math.random()*75})} const [x, y, z] = prv; if (y < 0 || y >= H || x < 0 || z < 0 || x >= W || z >= D) return;
+      const old = get(x, y, z); setb(x, y, z, s.id, 1); if (hit(P.x, P.y, P.z, .3, 1.8)) {setb(x, y, z, old, 1); return } s.n--; if (!s.n) inv[cur] = null; ui()
+    }
+    function mine(dt) {
+      if (!breaking || !tgt || !playing || invOpen) {bp = 0; bk = ''; $('bar').style.display = 'none'; return }
+      const [x, y, z] = tgt, k = x + ',' + y + ',' + z; if (k != bk) {bk = k; bp = 0} const b = get(x, y, z), t = IT[b], s = held(), tl = s && IT[s.id], tier = tl && tl.tool == 'pick' ? tl.tier : 0;
+      bp += dt * (tier ? [1, 2, 3.5, 5, 7][tier] * stat('s', 1) : 1); $('bar').style.display = 'block'; $('bar').firstChild.style.width = Math.min(100, bp / t.h * 100) + '%';
+      if (bp >= t.h) {bp = 0; bk = ''; setb(x, y, z, 0); if (!t.t || tier >= t.t) {if(b==6){const r=Math.random();if(r<.08){add(29);toast('An apple dropped!')}else if(r<.2)add(16);else if(r<.3)add(20)} else add(t.d || b, Math.random() < stat('l', 0) ? 2 : 1)} else toast('Need a better pickaxe for drops'); ui()}
+    }
+    // ---- main loop
+    let T = 120, last = performance.now(), zt = 0, rt = 0, ft = 0, fr = 0, wt = 0, as = 0;
+    function loop(now) {
+      requestAnimationFrame(loop); const dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (playing) {
+        T += dt; const ph = T % 1800;
+        const inW = wlv(get(Math.floor(P.x), Math.floor(P.y + .6), Math.floor(P.z))) > 0;
+        if (!invOpen) {
+          const sp = (keys[KB.sprint] ? 5.8 : 4.3) * stat('m', 1) * (inW ? .6 : 1); let fx = (keys[KB.right] ? 1 : 0) - (keys[KB.left] ? 1 : 0) + jx, fz = (keys[KB.back] ? 1 : 0) - (keys[KB.fwd] ? 1 : 0) + jz; const l = Math.hypot(fx, fz); if (l > 1) fx /= l, fz /= l;
+          const c = Math.cos(P.yaw), s = Math.sin(P.yaw); P.vx = (fx * c + fz * s) * sp; P.vz = (-fx * s + fz * c) * sp; if (keys[KB.jump] || jump) {if (inW) P.vy = 3.5; else if (P.g) {P.vy = 8.5; P.g = false} }
+        } else {P.vx = P.vz = 0}
+        P.vy -= (inW ? 6 : 25) * dt; if (inW && P.vy < -3) P.vy = -3; const dx = P.vx * dt, dy = P.vy * dt, dz = P.vz * dt; let bl = false;
+        P.x += dx; if (hit(P.x, P.y, P.z, .3, 1.8)) {P.x -= dx; bl = true} P.z += dz; if (hit(P.x, P.y, P.z, .3, 1.8)) {P.z -= dz; bl = true}
+        if (inW && bl && (dx || dz)) P.vy = Math.max(P.vy, 10);
+        P.y += dy; P.g = false; if (hit(P.x, P.y, P.z, .3, 1.8)) {P.y -= dy; if (P.vy < 0) {P.g = true; if (P.vy < -14) hurt(Math.floor((-P.vy - 14) * 1.2 + 1), 1)} P.vy = 0}
+        if (P.y < -10) spawn();
+        since += dt; fd = Math.max(0, fd - dt * .01); if (fd <= 0) {if ((hs += dt) > 4) {hs = 0; hurt(1, 1)} } else if (since > 6 && hp < 20 && fd >= 10) {hp = Math.min(20, hp + 1); since = 4}
+        const b = ph < 1160 ? 1 : ph < 1200 ? 1 - .8 * (ph - 1160) / 40 : ph < 1760 ? .2 : .2 + .8 * (ph - 1760) / 40, k = (b - .2) / .8;
+        const sky = new THREE.Color(0x070a20).lerp(new THREE.Color(0x87ceeb), k); scene.background = sky; scene.fog.color = sky; mat.color.setScalar(.06 + .94 * b); const zk = .3 + .7 * b; for (const t in MC) MT[t].color.setRGB(MC[t][0] * zk, MC[t][1] * zk, MC[t][2] * zk);
+        const th = ph < 1200 ? ph / 1200 * Math.PI : Math.PI + (ph - 1200) / 600 * Math.PI, ex = Math.cos(th), ey = Math.sin(th);
+        sun.position.set(P.x + ex * 120, P.y + ey * 120, P.z); moon.position.set(P.x - ex * 120, P.y - ey * 120, P.z); sun.lookAt(P.x, P.y, P.z); moon.lookAt(P.x, P.y, P.z);
+        zt += dt; if (zt > 3) {zt = 0; const nh = M.filter(q => q.k != 'p').length; if (b < .5 && nh < 8) for (let j = 0; j < 3; j++)spawnM(hostile()); if (b > .9 && M.length - nh < 8) for (let j = 0; j < 6; j++)spawnM('p')}
+        if (b > .9 && (rt += dt) > .6) {rt = 0; const i = M.findIndex(q => q.k != 'p'); if (i >= 0) rmM(i)}
+        for (let i = M.length - 1; i >= 0; i--) {
+          const q = M[i], ddx = P.x - q.x, ddz = P.z - q.z, dd = Math.hypot(ddx, ddz) || 1, fx = ddx / dd, fz = ddz / dd; if (dd > 60) {rmM(i); continue}
+          let tx = 0, tz = 0, sp = 0; q.cd -= dt;
+          if (q.k == 'p') {q.w -= dt; if (q.w < 0) {q.w = 2 + Math.random() * 3; q.a = Math.random() * 6.28; q.go = Math.random() < .6} tx = Math.cos(q.a); tz = Math.sin(q.a); sp = q.go ? 1.1 : 0}
+          else if (q.k == 's') {tx = fx; tz = fz; sp = dd > 10 ? 2 : dd < 5 ? -2 : 0; if (q.cd <= 0 && dd < 18) {q.cd = 2; shoot(q)} }
+          else {
+            tx = fx; tz = fz; sp = dd < .9 ? 0 : (q.k == 'b' ? 2.8 : 2.2); if (q.k == 'z' && dd < 1.2 && Math.abs(P.y - q.y) < 1.5 && q.cd <= 0) {hurt(3); q.cd = 1}
+            if (q.k == 'b') {if (dd < 2.6) q.fu += dt; else q.fu = Math.max(0, q.fu - dt); q.m.scale.setScalar(1 + (q.fu > 0 ? .12 * Math.sin(q.fu * 20) : 0)); if (q.fu > 1.4) {rmM(i); boom(q); continue} }
+          }
+          const mx = tx * sp * dt, mz = tz * sp * dt; q.x += mx; if (hit(q.x, q.y, q.z, .3, q.hh)) {q.x -= mx; if (q.g) q.vy = 7.5} q.z += mz; if (hit(q.x, q.y, q.z, .3, q.hh)) {q.z -= mz; if (q.g) q.vy = 7.5}
+          q.vy -= 25 * dt; q.y += q.vy * dt; q.g = false; if (hit(q.x, q.y, q.z, .3, q.hh)) {q.y -= q.vy * dt; if (q.vy < 0) q.g = true; q.vy = 0}
+          q.m.position.set(q.x, q.y + q.hh / 2, q.z); q.m.rotation.y = Math.atan2(q.k == 'p' ? tx : fx, q.k == 'p' ? tz : fz)
+        }
+        for (let i = A.length - 1; i >= 0; i--) {
+          const a = A[i]; a.vy -= 6 * dt; a.x += a.vx * dt; a.y += a.vy * dt; a.z += a.vz * dt; a.l -= dt;
+          if (a.l <= 0 || sol(get(Math.floor(a.x), Math.floor(a.y), Math.floor(a.z)))) {scene.remove(a.m); A.splice(i, 1); continue}
+          if (Math.hypot(a.x - P.x, a.y - (P.y + 1), a.z - P.z) < .8) {hurt(1.5); scene.remove(a.m); A.splice(i, 1); continue} a.m.position.set(a.x, a.y, a.z); a.m.lookAt(a.x + a.vx, a.y + a.vy, a.z + a.vz)
+        }
+        const dx2 = -Math.sin(P.yaw) * Math.cos(P.pitch), dy2 = Math.sin(P.pitch), dz2 = -Math.cos(P.yaw) * Math.cos(P.pitch); tgt = prv = null; let pv = null;
+        for (let t = 0; t < 5.5; t += .04) {const x = Math.floor(P.x + dx2 * t), y = Math.floor(P.y + 1.62 + dy2 * t), z = Math.floor(P.z + dz2 * t); if (sol(get(x, y, z)) && y >= 0 && x >= 0 && z >= 0 && x < W && z < D) {tgt = [x, y, z]; prv = pv; break} pv = [x, y, z]}
+        if (tgt) {hl.visible = true; hl.position.set(tgt[0] + .5, tgt[1] + .5, tgt[2] + .5)} else hl.visible = false;
+        mine(dt);fur(dt);sapTick(dt); if (invOpen == 2 && (ft += dt) > .5) {ft = 0; ui()} if ((wt += dt) > .2) {wt = 0; wtick()} if ((as += dt) > 90) {as = 0; saveWorld(1)}
+        const rem = Math.ceil(ph < 1200 ? 1200 - ph : 1800 - ph); $('hud').innerHTML = (ph < 1200 ? '☀ Day' : '🌙 Night') + ' — ' + (ph < 1200 ? 'night' : 'dawn') + ' in ' + Math.floor(rem / 60) + ':' + String(rem % 60).padStart(2, '0') + ' · Day ' + (Math.floor(T / 1800) + 1) + '<br>X ' + (P.x | 0) + ' Y ' + (P.y | 0) + ' Z ' + (P.z | 0) + ' · ' + wname;
+        $('hpb').style.width = hp / 20 * 100 + '%'; $('hpt').textContent = '❤ ' + Math.ceil(hp) + '/20' + (defTotal() ? '  🛡' + defTotal() : ''); $('fdb').style.width = fd / 20 * 100 + '%'; $('fdt').textContent = '🍖 ' + Math.ceil(fd) + '/20'
+      }
+      if (inGame) {
+        let n = 0; for (const k of dq) {build(k); dq.delete(k); if (++n > 3) break}
+        const pcx = P.x >> 4, pcz = P.z >> 4; n = 0; for (let r = 0; r <= RD && n < 2; r++)for (let a = -r; a <= r && n < 2; a++)for (let b = -r; b <= r && n < 2; b++) {if (Math.max(Math.abs(a), Math.abs(b)) != r) continue; const cx = pcx + a, cz = pcz + b; if (cx < 0 || cz < 0 || cx > MX || cz > MX) continue; const k = cx + ',' + cz; if (!meshes[k]) {build(k); n++} }
+        if (++fr % 90 == 0) for (const k in meshes) {const [a, b] = k.split(',').map(Number); if (Math.max(Math.abs(a - pcx), Math.abs(b - pcz)) > RD + 2) {scene.remove(meshes[k]); meshes[k].geometry.dispose(); delete meshes[k]} }
+      }
+      cam.position.set(P.x, P.y + 1.62, P.z); cam.rotation.set(P.pitch, P.yaw, 0);
+      const w = innerWidth, hh = innerHeight; if (cv.width != w || cv.height != hh) {ren.setSize(w, hh, false); cam.aspect = w / hh; cam.updateProjectionMatrix()}
+      ren.render(scene, cam)
+    }
+    ui(); requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>
